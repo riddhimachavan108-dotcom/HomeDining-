@@ -1,0 +1,112 @@
+// Home Dining — multi-tenant room-service ordering.
+// Dev uses SQLite (zero-config). For production, switch `provider` to
+// "postgresql" and point DATABASE_URL at Postgres; the schema is kept
+// portable (money as integer paise, status as string, no db-specific types).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// A tenant. Each hotel gets its own branded storefront at /{slug}.
+model Hotel {
+  id         String   @id @default(cuid())
+  slug       String   @unique // URL segment, e.g. "grand-majestic"
+  name       String
+  tagline    String   @default("Delivered to your door")
+  // Branding
+  logoText   String? // 2-letter monogram shown when there's no logo image
+  logoUrl    String? // optional uploaded logo
+  themeColor String   @default("#B8860B") // primary (gold by default)
+  accentColor String  @default("#1a1a2e") // header / hero (navy by default)
+  // Operations
+  gstPercent Int      @default(5) // tax rate applied at checkout
+  etaMinutes String   @default("20–35") // estimated delivery shown to guests
+  currency   String   @default("INR")
+  // Payments — the hotel's own UPI ID; guests pay via a dynamic UPI QR and
+  // staff verify the payment in their UPI app before confirming the order.
+  upiId      String?
+  // Single dashboard password per hotel, set during onboarding.
+  passwordHash String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  categories Category[]
+  menuItems  MenuItem[]
+  orders     Order[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  hotelId   String
+  hotel     Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  name      String
+  icon      String   @default("🍽️") // emoji shown on tab + section heading
+  sortOrder Int      @default(0)
+
+  items MenuItem[]
+
+  @@index([hotelId])
+}
+
+model MenuItem {
+  id           String   @id @default(cuid())
+  hotelId      String
+  hotel        Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  categoryId   String
+  category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name         String
+  description  String   @default("")
+  priceInPaise Int // store money as integer paise to avoid float errors
+  imageUrl     String?
+  isVeg        Boolean  @default(true)
+  isAvailable  Boolean  @default(true)
+  sortOrder    Int      @default(0)
+
+  orderItems OrderItem[]
+
+  @@index([hotelId])
+  @@index([categoryId])
+}
+
+/// A guest order. Status is a string (portable across DBs):
+/// PENDING -> PAID -> PREPARING -> DELIVERED (or CANCELLED).
+model Order {
+  id              String   @id @default(cuid())
+  hotelId         String
+  hotel           Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  roomNumber      String
+  guestName       String?
+  status          String   @default("PENDING")
+  subtotalInPaise Int
+  taxInPaise      Int
+  totalInPaise    Int
+  note            String? // guest instructions
+  // Set when staff verify the UPI payment in their app.
+  paymentVerifiedAt DateTime?
+  createdAt       DateTime @default(now())
+
+  items OrderItem[]
+
+  @@index([hotelId])
+  @@index([status])
+}
+
+/// Line item on an order. Name and price are snapshotted so historical
+/// orders remain correct even if the menu changes later.
+model OrderItem {
+  id            String   @id @default(cuid())
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId    String?
+  menuItem      MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+  nameSnapshot  String
+  priceInPaise  Int
+  quantity      Int
+
+  @@index([orderId])
+}

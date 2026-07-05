@@ -1,65 +1,85 @@
-import Image from "next/image";
+import Link from "next/link";
+import { prisma } from "@/lib/db";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function LandingPage() {
+  const hotels = await prisma.hotel.findMany({
+    where: { isActive: true },
+    orderBy: { createdAt: "asc" },
+    select: { slug: true, name: true, logoText: true, logoUrl: true, themeColor: true },
+  });
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="lp">
+      <header className="lp-hero">
+        <div className="lp-badge">🛎️ Home Dining</div>
+        <h1>Room-service ordering for hotels</h1>
+        <p>
+          Set up your hotel in minutes: add your name, logo, UPI ID and menu.
+          You get your own link to put in every room, and guests order &amp; pay
+          from their phone — no phone calls, no waiting.
+        </p>
+        <Link href="/setup" className="lp-cta">
+          Set up your hotel →
+        </Link>
+      </header>
+
+      <main className="lp-main">
+        <div className="lp-steps">
+          <div className="lp-step">
+            <span>1</span> Enter your hotel name, logo, UPI ID &amp; build your menu
+          </div>
+          <div className="lp-step">
+            <span>2</span> Get your unique link and put it in every room
+          </div>
+          <div className="lp-step">
+            <span>3</span> Guests order &amp; pay by UPI; you see orders instantly
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        {hotels.length > 0 && (
+          <div className="lp-existing">
+            <h2 className="lp-section-title">Hotels already set up</h2>
+            <div className="lp-hotels">
+              {hotels.map((h) => (
+                <div
+                  key={h.slug}
+                  className="lp-card"
+                  style={{ ["--card-primary" as string]: h.themeColor }}
+                >
+                  <div className="lp-card-head">
+                    <div className="lp-card-logo">
+                      {h.logoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={h.logoUrl} alt={h.name} />
+                      ) : (
+                        (h.logoText ?? h.name.slice(0, 2)).toUpperCase()
+                      )}
+                    </div>
+                    <div className="lp-card-name">{h.name}</div>
+                  </div>
+                  <div className="lp-card-actions">
+                    <Link href={`/${h.slug}`} className="lp-btn lp-btn-primary">
+                      Guest site →
+                    </Link>
+                    <Link
+                      href={`/${h.slug}/admin/login`}
+                      className="lp-btn lp-btn-ghost"
+                    >
+                      Manager login
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
+
+      <footer className="lp-footer">
+        Home Dining · multi-tenant room service
+      </footer>
     </div>
   );
 }
