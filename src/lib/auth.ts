@@ -10,9 +10,12 @@ import { prisma } from "./db";
 const COOKIE = "hd_admin";
 const MAX_AGE = 60 * 60 * 8; // 8 hours
 
+export type Role = "manager" | "staff";
+
 type SessionPayload = {
   hotelId: string;
   slug: string;
+  role: Role;
   exp: number;
 };
 
@@ -84,11 +87,15 @@ export async function clearSessionCookie() {
 }
 
 /**
- * Return the hotel IF the current session is signed in for that slug.
- * Returns null otherwise (caller redirects to that hotel's login).
+ * Return the hotel AND role IF the current session is signed in for that slug.
+ * Returns null otherwise (caller redirects to the login).
  */
 export async function getAuthedHotel(slug: string) {
   const session = await getHotelSession();
   if (!session || session.slug !== slug) return null;
-  return prisma.hotel.findFirst({ where: { id: session.hotelId, slug } });
+  const hotel = await prisma.hotel.findFirst({
+    where: { id: session.hotelId, slug },
+  });
+  if (!hotel) return null;
+  return { hotel, role: session.role };
 }

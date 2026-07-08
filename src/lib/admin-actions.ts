@@ -1,5 +1,6 @@
 "use server";
 
+import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { prisma } from "./db";
 import { getAuthedHotel } from "./auth";
@@ -7,10 +8,18 @@ import { getAuthedHotel } from "./auth";
 // Every action re-verifies the session and returns the hotelId, so all
 // writes are scoped to the logged-in hotel — a hotel can never touch
 // another tenant's data even if it forges an id.
-async function requireHotel(slug: string): Promise<string> {
-  const hotel = await getAuthedHotel(slug);
-  if (!hotel) throw new Error("Not authorized");
-  return hotel.id;
+// Manager-only actions (menu, prices, branding, credentials).
+async function requireManager(slug: string): Promise<string> {
+  const authed = await getAuthedHotel(slug);
+  if (!authed || authed.role !== "manager") throw new Error("Not authorized");
+  return authed.hotel.id;
+}
+
+// Actions staff may also perform (updating order status).
+async function requireStaffOrManager(slug: string): Promise<string> {
+  const authed = await getAuthedHotel(slug);
+  if (!authed) throw new Error("Not authorized");
+  return authed.hotel.id;
 }
 
 const rupeesToPaise = (v: FormDataEntryValue | null) =>
@@ -39,7 +48,7 @@ function refresh(slug: string) {
 /* ── CATEGORIES ─────────────────────────────────────────── */
 
 export async function addCategory(slug: string, formData: FormData) {
-  const hotelId = await requireHotel(slug);
+  const hotelId = await requireManager(slug);
   const name = String(formData.get("name") || "").trim();
   const icon = String(formData.get("icon") || "🍽️").trim() || "🍽️";
   if (!name) return;
@@ -51,7 +60,7 @@ export async function addCategory(slug: string, formData: FormData) {
 }
 
 export async function updateCategory(slug: string, formData: FormData) {
-  const hotelId = await requireHotel(slug);
+  const hotelId = await requireManager(slug);
   const id = String(formData.get("id") || "");
   const name = String(formData.get("name") || "").trim();
   const icon = String(formData.get("icon") || "🍽️").trim() || "🍽️";
@@ -64,7 +73,7 @@ export async function updateCategory(slug: string, formData: FormData) {
 }
 
 export async function deleteCategory(slug: string, formData: FormData) {
-  const hotelId = await requireHotel(slug);
+  const hotelId = await requireManager(slug);
   const id = String(formData.get("id") || "");
   if (!id) return;
   // Cascade removes the category's items too (see schema onDelete).
@@ -75,7 +84,7 @@ export async function deleteCategory(slug: string, formData: FormData) {
 /* ── MENU ITEMS ─────────────────────────────────────────── */
 
 export async function addItem(slug: string, formData: FormData) {
-  const hotelId = await requireHotel(slug);
+  const hotelId = await requireManager(slug);
   const categoryId = String(formData.get("categoryId") || "");
   const name = String(formData.get("name") || "").trim();
   if (!categoryId || !name) return;
@@ -105,7 +114,7 @@ export async function addItem(slug: string, formData: FormData) {
 }
 
 export async function updateItem(slug: string, formData: FormData) {
-  const hotelId = await requireHotel(slug);
+  const hotelId = await requireManager(slug);
   const id = String(formData.get("id") || "");
   const name = String(formData.get("name") || "").trim();
   if (!id || !name) return;
@@ -126,7 +135,7 @@ export async function updateItem(slug: string, formData: FormData) {
 }
 
 export async function toggleItemAvailable(slug: string, formData: FormData) {
-  const hotelId = await requireHotel(slug);
+  const hotelId = await requireManager(slug);
   const id = String(formData.get("id") || "");
   const available = formData.get("available") === "true";
   if (!id) return;
@@ -138,7 +147,7 @@ export async function toggleItemAvailable(slug: string, formData: FormData) {
 }
 
 export async function deleteItem(slug: string, formData: FormData) {
-  const hotelId = await requireHotel(slug);
+  const hotelId = await requireManager(slug);
   const id = String(formData.get("id") || "");
   if (!id) return;
   await prisma.menuItem.deleteMany({ where: { id, hotelId } });
@@ -148,7 +157,7 @@ export async function deleteItem(slug: string, formData: FormData) {
 /* ── ORDERS ─────────────────────────────────────────────── */
 
 export async function updateOrderStatus(slug: string, formData: FormData) {
-  const hotelId = await requireHotel(slug);
+  const hotelId = await requireStaffOrManager(slug); // staff may update orders
   const id = String(formData.get("id") || "");
   const status = String(formData.get("status") || "");
   const allowed = [
@@ -168,6 +177,7 @@ export async function updateOrderStatus(slug: string, formData: FormData) {
     },
   });
   revalidatePath(`/${slug}/admin`);
+  revalidatePath(`/${slug}/staff`);
 }
 
 /* ── BRANDING ───────────────────────────────────────────── */
@@ -179,7 +189,7 @@ export async function updateBranding(
   _prev: { ok?: boolean; error?: string } | undefined,
   formData: FormData
 ): Promise<{ ok?: boolean; error?: string }> {
-  const hotelId = await requireHotel(slug);
+  const hotelId = await requireManager(slug);
   const name = String(formData.get("name") || "").trim();
   if (!name) return { error: "Hotel name is required." };
   const gstRaw = parseInt(String(formData.get("gstPercent") || "5"), 10);
@@ -220,6 +230,54 @@ export async function updateBranding(
       gstPercent: Number.isFinite(gstRaw) ? gstRaw : 5,
     },
   });
+  revalidatePath(`/${slug}/admin/settings`);
+  revalidatePath(`/${slug}`);
+  return { ok: true };
+}
+
+/* ── CREDENTIALS (manager only) ─────────────────────────── */
+
+export async function updateCredentials(
+  slug: string,
+  _prev: { ok?: boolean; error?: string } | undefined,
+  formData: FormData
+): Promise<{ ok?: boolean; error?: string }> {
+  const hotelId = await requireManager(slug);
+  const newCode = String(formData.get("guestCode") || "").trim().toUpperCase();
+  const newManagerPw = String(formData.get("managerPassword") || "");
+  const newStaffPw = String(formData.get("staffPassword") || "");
+
+  const data: {
+    guestCode?: string;
+    passwordHash?: string;
+    staffPasswordHash?: string;
+  } = {};
+
+  if (newCode) {
+    const taken = await prisma.hotel.findFirst({
+      where: { guestCode: newCode, NOT: { id: hotelId } },
+    });
+    if (taken) return { error: `The guest code "${newCode}" is taken.` };
+    data.guestCode = newCode;
+  }
+  if (newManagerPw) {
+    if (newManagerPw.length < 4)
+      return { error: "Manager password must be at least 4 characters." };
+    data.passwordHash = await bcrypt.hash(newManagerPw, 10);
+  }
+  if (newStaffPw) {
+    if (newStaffPw.length < 4)
+      return { error: "Staff password must be at least 4 characters." };
+    data.staffPasswordHash = await bcrypt.hash(newStaffPw, 10);
+  }
+  if (newManagerPw && newStaffPw && newManagerPw === newStaffPw) {
+    return { error: "Manager and staff passwords must be different." };
+  }
+  if (Object.keys(data).length === 0) {
+    return { error: "Enter a new code or password to update." };
+  }
+
+  await prisma.hotel.update({ where: { id: hotelId }, data });
   revalidatePath(`/${slug}/admin/settings`);
   revalidatePath(`/${slug}`);
   return { ok: true };

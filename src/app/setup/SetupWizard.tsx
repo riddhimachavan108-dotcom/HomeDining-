@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { slugify } from "@/lib/slug";
 import {
   checkSlugAvailable,
+  checkGuestCodeAvailable,
   createHotelFromWizard,
   type WizardCategory,
 } from "@/lib/onboarding-actions";
@@ -55,6 +56,11 @@ export default function SetupWizard() {
   );
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
+  const [staffPassword, setStaffPassword] = useState("");
+  const [guestCode, setGuestCode] = useState("");
+  const [codeState, setCodeState] = useState<"idle" | "checking" | "ok" | "taken">(
+    "idle"
+  );
 
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -117,6 +123,13 @@ export default function SetupWizard() {
     setSlugState(res.available ? "ok" : "taken");
   }
 
+  async function verifyCode() {
+    if (!guestCode.trim()) return setCodeState("idle");
+    setCodeState("checking");
+    const res = await checkGuestCodeAvailable(guestCode);
+    setCodeState(res.available ? "ok" : "taken");
+  }
+
   function goTo(next: number) {
     setError("");
     if (next === 2 && !name.trim()) {
@@ -134,8 +147,16 @@ export default function SetupWizard() {
     setError("");
     if (!effectiveSlug) return setError("Please choose a web address.");
     if (slugState === "taken") return setError("That web address is taken.");
-    if (password.length < 4) return setError("Password must be at least 4 characters.");
+    if (password.length < 4)
+      return setError("Manager password must be at least 4 characters.");
     if (password !== password2) return setError("Passwords don't match.");
+    if (staffPassword.length < 4)
+      return setError("Staff password must be at least 4 characters.");
+    if (staffPassword === password)
+      return setError("Manager and staff passwords must be different.");
+    if (!guestCode.trim()) return setError("Please choose a guest code.");
+    if (codeState === "taken")
+      return setError("That guest code is taken — choose another.");
 
     setSubmitting(true);
     const res = await createHotelFromWizard({
@@ -147,6 +168,8 @@ export default function SetupWizard() {
       accentColor,
       slug: effectiveSlug,
       password,
+      staffPassword,
+      guestCode,
       categories,
     });
     if ("error" in res) {
@@ -349,9 +372,10 @@ export default function SetupWizard() {
         {/* STEP 3 */}
         {step === 3 && (
           <div className="wz-body">
-            <h1 className="wz-h1">Your address &amp; password</h1>
+            <h1 className="wz-h1">Address, codes &amp; passwords</h1>
             <p className="wz-sub">
-              Guests visit this link; you sign in with this password.
+              Guests type the guest code to see your menu. You and your staff
+              sign in with separate passwords.
             </p>
 
             <label className="wz-label">Your hotel&rsquo;s web address</label>
@@ -377,21 +401,49 @@ export default function SetupWizard() {
               )}
             </div>
 
-            <label className="wz-label">Dashboard password</label>
+            <label className="wz-label">Guest code (guests type this to order)</label>
+            <input
+              className="wz-input wz-emoji-wide"
+              value={guestCode}
+              onChange={(e) => {
+                setGuestCode(e.target.value.toUpperCase());
+                setCodeState("idle");
+              }}
+              onBlur={verifyCode}
+              placeholder="e.g. GRAND24"
+            />
+            <div className="wz-slug-status">
+              {codeState === "checking" && "Checking…"}
+              {codeState === "ok" && <span className="ok">✓ Available</span>}
+              {codeState === "taken" && (
+                <span className="taken">Taken — try another</span>
+              )}
+            </div>
+
+            <label className="wz-label">Manager password (full dashboard)</label>
             <input
               className="wz-input"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Choose a password"
+              placeholder="Choose a manager password"
             />
-            <label className="wz-label">Confirm password</label>
+            <label className="wz-label">Confirm manager password</label>
             <input
               className="wz-input"
               type="password"
               value={password2}
               onChange={(e) => setPassword2(e.target.value)}
-              placeholder="Re-enter password"
+              placeholder="Re-enter manager password"
+            />
+
+            <label className="wz-label">Staff password (orders view only)</label>
+            <input
+              className="wz-input"
+              type="password"
+              value={staffPassword}
+              onChange={(e) => setStaffPassword(e.target.value)}
+              placeholder="Choose a different staff password"
             />
 
             {error && <div className="wz-error">{error}</div>}

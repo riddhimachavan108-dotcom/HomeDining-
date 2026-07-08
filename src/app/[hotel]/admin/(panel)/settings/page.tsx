@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getAuthedHotel } from "@/lib/auth";
 import SettingsForm from "./SettingsForm";
+import CredentialsForm from "./CredentialsForm";
 
 export default async function AdminSettingsPage({
   params,
@@ -8,8 +9,9 @@ export default async function AdminSettingsPage({
   params: Promise<{ hotel: string }>;
 }) {
   const { hotel: slug } = await params;
-  const hotel = await getAuthedHotel(slug);
-  if (!hotel) notFound();
+  const authed = await getAuthedHotel(slug);
+  if (!authed) notFound();
+  const hotel = authed.hotel;
 
   return (
     <div>
@@ -37,6 +39,18 @@ export default async function AdminSettingsPage({
           gstPercent: hotel.gstPercent,
         }}
       />
+
+      <div className="adm-page-head" style={{ marginTop: 32 }}>
+        <div>
+          <h1 className="adm-h1">Access codes &amp; passwords</h1>
+          <p className="adm-page-sub">
+            The guest code guests type to reach your menu, and the passwords for
+            the manager and staff logins.
+          </p>
+        </div>
+      </div>
+
+      <CredentialsForm slug={hotel.slug} guestCode={hotel.guestCode ?? ""} />
     </div>
   );
 }

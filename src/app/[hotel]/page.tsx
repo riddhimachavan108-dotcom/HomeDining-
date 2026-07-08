@@ -46,7 +46,7 @@ export default async function HotelWelcomePage({
         <p className="hd-welcome-note">Fresh food, delivered to your room.</p>
       </div>
 
-      <Link href={`/${slug}/admin/login`} className="hd-welcome-staff">
+      <Link href={`/login`} className="hd-welcome-staff">
         Hotel staff? Sign in
       </Link>
     </div>

@@ -31,11 +31,11 @@ export default async function AdminOrdersPage({
   params: Promise<{ hotel: string }>;
 }) {
   const { hotel: slug } = await params;
-  const hotel = await getAuthedHotel(slug);
-  if (!hotel) notFound();
+  const authed = await getAuthedHotel(slug);
+  if (!authed) notFound();
 
   const orders = await prisma.order.findMany({
-    where: { hotelId: hotel.id },
+    where: { hotelId: authed.hotel.id },
     orderBy: { createdAt: "desc" },
     include: { items: true },
     take: 100,

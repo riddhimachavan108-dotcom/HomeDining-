@@ -9,11 +9,11 @@ export default async function AdminMenuPage({
   params: Promise<{ hotel: string }>;
 }) {
   const { hotel: slug } = await params;
-  const hotel = await getAuthedHotel(slug);
-  if (!hotel) notFound();
+  const authed = await getAuthedHotel(slug);
+  if (!authed) notFound();
 
   const categories = await prisma.category.findMany({
-    where: { hotelId: hotel.id },
+    where: { hotelId: authed.hotel.id },
     orderBy: { sortOrder: "asc" },
     include: { items: { orderBy: { sortOrder: "asc" } } },
   });

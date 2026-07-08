@@ -16,9 +16,11 @@ export default async function AdminPanelLayout({
   const hotel = await getHotelBranding(slug);
   if (!hotel) notFound();
 
-  // Auth guard: only this hotel's signed-in manager may enter.
+  // Auth guard: the full dashboard is manager-only. Not signed in → login;
+  // signed in as staff → send them to the limited orders view.
   const authed = await getAuthedHotel(slug);
-  if (!authed) redirect(`/${slug}/admin/login`);
+  if (!authed) redirect(`/login`);
+  if (authed.role !== "manager") redirect(`/${slug}/staff`);
 
   const logout = logoutAction.bind(null, slug);
 

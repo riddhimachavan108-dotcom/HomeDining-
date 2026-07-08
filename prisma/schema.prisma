@@ -30,8 +30,10 @@ model Hotel {
   // Payments — the hotel's own UPI ID; guests pay via a dynamic UPI QR and
   // staff verify the payment in their UPI app before confirming the order.
   upiId      String?
-  // Single dashboard password per hotel, set during onboarding.
-  passwordHash String?
+  // Three credentials per hotel, all set at onboarding, editable by the manager.
+  passwordHash      String? // manager password (full dashboard)
+  staffPasswordHash String? // staff password (orders-only view)
+  guestCode         String? @unique // code guests enter to reach the menu
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
 

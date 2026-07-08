@@ -25,7 +25,9 @@ export type WizardPayload = {
   themeColor: string;
   accentColor: string;
   slug: string;
-  password: string;
+  password: string; // manager password
+  staffPassword: string;
+  guestCode: string;
   categories: WizardCategory[];
 };
 
@@ -33,6 +35,7 @@ const MAX_DATAURL_LEN = 2_000_000; // ~1.5 MB image
 const rs = (v: string) => Math.round(parseFloat(v || "0") * 100);
 const okImage = (s: string | null) =>
   s && s.startsWith("data:image/") && s.length <= MAX_DATAURL_LEN ? s : null;
+const normCode = (c: string) => c.trim().toUpperCase();
 
 /** Is this URL slug free to use? */
 export async function checkSlugAvailable(
@@ -42,6 +45,16 @@ export async function checkSlugAvailable(
   if (!slug) return { slug, available: false };
   const existing = await prisma.hotel.findUnique({ where: { slug } });
   return { slug, available: !existing };
+}
+
+/** Is this guest code free to use? */
+export async function checkGuestCodeAvailable(
+  raw: string
+): Promise<{ code: string; available: boolean }> {
+  const code = normCode(raw);
+  if (!code) return { code, available: false };
+  const existing = await prisma.hotel.findFirst({ where: { guestCode: code } });
+  return { code, available: !existing };
 }
 
 /**
@@ -54,16 +67,29 @@ export async function createHotelFromWizard(
   const name = payload.name?.trim();
   const slug = slugify(payload.slug || payload.name || "");
   const password = payload.password || "";
+  const staffPassword = payload.staffPassword || "";
+  const guestCode = normCode(payload.guestCode || "");
 
   if (!name) return { error: "Please enter your hotel name." };
   if (!slug) return { error: "Please choose a web address for your hotel." };
   if (password.length < 4) {
-    return { error: "Your password must be at least 4 characters." };
+    return { error: "Your manager password must be at least 4 characters." };
   }
+  if (staffPassword.length < 4) {
+    return { error: "Your staff password must be at least 4 characters." };
+  }
+  if (password === staffPassword) {
+    return { error: "Manager and staff passwords must be different." };
+  }
+  if (!guestCode) return { error: "Please choose a guest code." };
 
   const existing = await prisma.hotel.findUnique({ where: { slug } });
   if (existing) {
     return { error: `The address /${slug} is taken. Please choose another.` };
+  }
+  const codeTaken = await prisma.hotel.findFirst({ where: { guestCode } });
+  if (codeTaken) {
+    return { error: `The guest code "${guestCode}" is taken. Please choose another.` };
   }
 
   const monogram = name
@@ -85,6 +111,8 @@ export async function createHotelFromWizard(
       themeColor: payload.themeColor || "#B8860B",
       accentColor: payload.accentColor || "#1a1a2e",
       passwordHash: await bcrypt.hash(password, 10),
+      staffPasswordHash: await bcrypt.hash(staffPassword, 10),
+      guestCode,
     },
   });
 
@@ -119,7 +147,11 @@ export async function createHotelFromWizard(
   }
 
   // Sign the manager in immediately.
-  const token = createSessionToken({ hotelId: hotel.id, slug });
+  const token = createSessionToken({
+    hotelId: hotel.id,
+    slug,
+    role: "manager",
+  });
   await setSessionCookie(token);
 
   return { ok: true, slug };
