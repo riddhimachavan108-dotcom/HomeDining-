@@ -23,6 +23,10 @@ export default function FrontDoor() {
             Guest
           </Link>
         </div>
+
+        <div className="fd-legal">
+          <Link href="/privacy">Privacy Policy</Link>
+        </div>
       </div>
     </div>
   );

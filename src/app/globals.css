@@ -2208,6 +2208,90 @@ body {
   color: #1a1a2e;
 }
 
+/* Blue "Privacy Policy" footer link shown at the bottom of entry screens */
+.site-legal {
+  text-align: center;
+  padding: 18px;
+}
+.site-legal a {
+  color: #3b6fd4;
+  font-size: 13px;
+  text-decoration: underline;
+}
+.site-legal a:hover {
+  color: #2451a8;
+}
+.fd-legal {
+  margin-top: 18px;
+}
+.fd-legal a {
+  color: #3b6fd4;
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+/* ── PRIVACY / LEGAL PAGE ────────────────────────────────── */
+.legal {
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 32px 20px 64px;
+}
+.legal-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  color: #2a2a2a;
+  line-height: 1.65;
+}
+.legal-wrap h1 {
+  font-size: 30px;
+  color: #1a1a2e;
+  margin: 12px 0 4px;
+}
+.legal-updated {
+  color: #888;
+  font-size: 13px;
+  margin: 0 0 24px;
+}
+.legal-wrap h2 {
+  font-size: 18px;
+  color: #1a1a2e;
+  margin: 28px 0 8px;
+}
+.legal-wrap p {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+.legal-wrap ul {
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+.legal-wrap li {
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+.legal-contact {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.legal-foot-note {
+  margin-top: 24px;
+  font-style: italic;
+  color: #555;
+}
+.legal-back {
+  display: inline-block;
+  color: #3b6fd4;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  margin: 8px 0 20px;
+}
+.legal-back:hover {
+  text-decoration: underline;
+}
+
 /* Not found */
 .lp-notfound {
   min-height: 100vh;

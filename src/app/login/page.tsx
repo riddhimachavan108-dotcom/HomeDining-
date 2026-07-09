@@ -17,6 +17,9 @@ export default function LoginPage() {
         <Link href="/" className="fd-back">
           ← Back
         </Link>
+        <div className="fd-legal">
+          <Link href="/privacy">Privacy Policy</Link>
+        </div>
       </div>
     </div>
   );

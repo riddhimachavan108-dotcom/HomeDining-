@@ -14,6 +14,9 @@ export default function GuestEntryPage() {
         <Link href="/" className="fd-back">
           ← Back
         </Link>
+        <div className="fd-legal">
+          <Link href="/privacy">Privacy Policy</Link>
+        </div>
       </div>
     </div>
   );
