@@ -6,15 +6,31 @@ import { updateCredentials } from "@/lib/admin-actions";
 export default function CredentialsForm({
   slug,
   guestCode,
+  managerEmail,
 }: {
   slug: string;
   guestCode: string;
+  managerEmail: string;
 }) {
   const action = updateCredentials.bind(null, slug);
   const [state, formAction, pending] = useActionState(action, {});
 
   return (
     <form action={formAction} className="adm-card adm-settings">
+      <div className="adm-field">
+        <label className="adm-label">Manager email (for password reset)</label>
+        <input
+          name="managerEmail"
+          type="email"
+          className="adm-input"
+          defaultValue={managerEmail}
+          placeholder="manager@yourhotel.com"
+        />
+        <span className="adm-hint">
+          If you forget your password, the reset link is sent here.
+        </span>
+      </div>
+
       <div className="adm-field">
         <label className="adm-label">Guest code</label>
         <input

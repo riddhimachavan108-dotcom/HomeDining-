@@ -50,7 +50,11 @@ export default async function AdminSettingsPage({
         </div>
       </div>
 
-      <CredentialsForm slug={hotel.slug} guestCode={hotel.guestCode ?? ""} />
+      <CredentialsForm
+        slug={hotel.slug}
+        guestCode={hotel.guestCode ?? ""}
+        managerEmail={hotel.managerEmail ?? ""}
+      />
     </div>
   );
 }

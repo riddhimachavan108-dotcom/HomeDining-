@@ -244,15 +244,21 @@ export async function updateCredentials(
 ): Promise<{ ok?: boolean; error?: string }> {
   const hotelId = await requireManager(slug);
   const newCode = String(formData.get("guestCode") || "").trim().toUpperCase();
+  const newEmail = String(formData.get("managerEmail") || "").trim().toLowerCase();
   const newManagerPw = String(formData.get("managerPassword") || "");
   const newStaffPw = String(formData.get("staffPassword") || "");
 
   const data: {
     guestCode?: string;
+    managerEmail?: string;
     passwordHash?: string;
     staffPasswordHash?: string;
   } = {};
 
+  if (newEmail) {
+    if (!newEmail.includes("@")) return { error: "Enter a valid email address." };
+    data.managerEmail = newEmail;
+  }
   if (newCode) {
     const taken = await prisma.hotel.findFirst({
       where: { guestCode: newCode, NOT: { id: hotelId } },

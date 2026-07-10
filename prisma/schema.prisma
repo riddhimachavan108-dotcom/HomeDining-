@@ -34,6 +34,10 @@ model Hotel {
   passwordHash      String? // manager password (full dashboard)
   staffPasswordHash String? // staff password (orders-only view)
   guestCode         String? @unique // code guests enter to reach the menu
+  managerEmail      String? // for password reset
+  // Password-reset link (hash of a one-time token + its expiry).
+  resetTokenHash      String?
+  resetTokenExpiresAt DateTime?
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
 

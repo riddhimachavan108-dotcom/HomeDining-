@@ -39,6 +39,7 @@ export default function SetupWizard() {
   const [name, setName] = useState("");
   const [tagline, setTagline] = useState("");
   const [upiId, setUpiId] = useState("");
+  const [managerEmail, setManagerEmail] = useState("");
   const [themeColor, setThemeColor] = useState("#B8860B");
   const [accentColor, setAccentColor] = useState("#1a1a2e");
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
@@ -136,6 +137,10 @@ export default function SetupWizard() {
       setError("Please enter your hotel name.");
       return;
     }
+    if (next === 2 && !managerEmail.includes("@")) {
+      setError("Please enter a valid manager email (used for password reset).");
+      return;
+    }
     if (next === 3) {
       if (!slugEdited) setSlug(slugify(name));
       verifySlug();
@@ -167,6 +172,7 @@ export default function SetupWizard() {
       themeColor,
       accentColor,
       slug: effectiveSlug,
+      managerEmail,
       password,
       staffPassword,
       guestCode,
@@ -236,6 +242,15 @@ export default function SetupWizard() {
               value={upiId}
               onChange={(e) => setUpiId(e.target.value)}
               placeholder="e.g. yourhotel@okhdfcbank"
+            />
+
+            <label className="wz-label">Manager email (for password reset)</label>
+            <input
+              className="wz-input"
+              type="email"
+              value={managerEmail}
+              onChange={(e) => setManagerEmail(e.target.value)}
+              placeholder="e.g. manager@yourhotel.com"
             />
 
             <div className="wz-colors">

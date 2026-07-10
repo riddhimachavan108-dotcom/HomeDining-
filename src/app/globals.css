@@ -2197,6 +2197,29 @@ body {
   text-align: center;
   margin: 14px 0 0;
 }
+.fd-ok {
+  background: #e7f6ec;
+  color: #1a7f3c;
+  font-size: 13.5px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  margin: 8px 0 4px;
+  text-align: center;
+}
+.fd-links {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 18px;
+}
+.fd-links a {
+  color: #888;
+  font-size: 13px;
+  text-decoration: none;
+}
+.fd-links a:hover {
+  color: #1a1a2e;
+  text-decoration: underline;
+}
 .fd-back {
   display: inline-block;
   margin-top: 20px;

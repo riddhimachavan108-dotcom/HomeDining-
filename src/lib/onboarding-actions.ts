@@ -25,6 +25,7 @@ export type WizardPayload = {
   themeColor: string;
   accentColor: string;
   slug: string;
+  managerEmail: string;
   password: string; // manager password
   staffPassword: string;
   guestCode: string;
@@ -66,11 +67,15 @@ export async function createHotelFromWizard(
 ): Promise<{ ok: true; slug: string } | { error: string }> {
   const name = payload.name?.trim();
   const slug = slugify(payload.slug || payload.name || "");
+  const managerEmail = (payload.managerEmail || "").trim().toLowerCase();
   const password = payload.password || "";
   const staffPassword = payload.staffPassword || "";
   const guestCode = normCode(payload.guestCode || "");
 
   if (!name) return { error: "Please enter your hotel name." };
+  if (!managerEmail || !managerEmail.includes("@")) {
+    return { error: "Please enter a valid email (used for password reset)." };
+  }
   if (!slug) return { error: "Please choose a web address for your hotel." };
   if (password.length < 4) {
     return { error: "Your manager password must be at least 4 characters." };
@@ -113,6 +118,7 @@ export async function createHotelFromWizard(
       passwordHash: await bcrypt.hash(password, 10),
       staffPasswordHash: await bcrypt.hash(staffPassword, 10),
       guestCode,
+      managerEmail,
     },
   });
 
