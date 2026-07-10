@@ -177,7 +177,7 @@ export default function PrivacyPage() {
         <p className="legal-contact">
           Name: <strong>[Grievance Officer name]</strong>
           <br />
-          Email: <strong>riddhimachavan108@gmail.com</strong>
+          Email: <strong>silverbasetech.in@gmail.com</strong>
           <br />
           Address: <strong>[business address, India]</strong>
         </p>
