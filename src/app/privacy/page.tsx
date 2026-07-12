@@ -21,8 +21,7 @@ export default function PrivacyPage() {
         <p>
           Home Dining (&ldquo;Home Dining&rdquo;, &ldquo;we&rdquo;,
           &ldquo;us&rdquo;, &ldquo;our&rdquo;) is a software platform operated by{" "}
-          <strong>[your registered business / legal name]</strong>,{" "}
-          <strong>[full business address, India]</strong>. Home Dining provides
+          <strong>SilverBest</strong>. Home Dining provides
           hotels with a branded online system that lets their in-house guests
           view a menu and place room-service orders from their own device.
         </p>
@@ -171,15 +170,11 @@ export default function PrivacyPage() {
         <h2>12. Grievance Officer / contact</h2>
         <p>
           In accordance with the Information Technology Act, 2000, the rules
-          thereunder, and the Digital Personal Data Protection Act, 2023, our
-          Grievance Officer is:
+          thereunder, and the Digital Personal Data Protection Act, 2023, you
+          can contact our Grievance Officer at:
         </p>
         <p className="legal-contact">
-          Name: <strong>[Grievance Officer name]</strong>
-          <br />
           Email: <strong>silverbasetech.in@gmail.com</strong>
-          <br />
-          Address: <strong>[business address, India]</strong>
         </p>
         <p>
           We will acknowledge and address complaints within the timeframes
