@@ -37,7 +37,8 @@ export async function resolveGuestCode(
  * decides the role: manager password → full dashboard, staff password →
  * orders-only view. Any mismatch returns the same generic error.
  */
-export async function managerStaffLogin(
+export async function roleLogin(
+  role: Role,
   _prev: { error?: string } | undefined,
   formData: FormData
 ): Promise<{ error?: string }> {
@@ -62,16 +63,13 @@ export async function managerStaffLogin(
     },
   });
 
-  // Check the password against each candidate's manager + staff hashes.
-  const matches: { slug: string; role: Role; hotelId: string }[] = [];
+  // Check the password ONLY against the chosen role's hash — so the staff
+  // password never works on the manager screen, and vice versa.
+  const matches: { slug: string; hotelId: string }[] = [];
   for (const h of candidates) {
-    if (h.passwordHash && (await bcrypt.compare(password, h.passwordHash))) {
-      matches.push({ slug: h.slug, role: "manager", hotelId: h.id });
-    } else if (
-      h.staffPasswordHash &&
-      (await bcrypt.compare(password, h.staffPasswordHash))
-    ) {
-      matches.push({ slug: h.slug, role: "staff", hotelId: h.id });
+    const hash = role === "manager" ? h.passwordHash : h.staffPasswordHash;
+    if (hash && (await bcrypt.compare(password, hash))) {
+      matches.push({ slug: h.slug, hotelId: h.id });
     }
   }
 
@@ -79,11 +77,7 @@ export async function managerStaffLogin(
   if (matches.length !== 1) return { error: NOT_FOUND };
   const m = matches[0];
 
-  const token = createSessionToken({
-    hotelId: m.hotelId,
-    slug: m.slug,
-    role: m.role,
-  });
+  const token = createSessionToken({ hotelId: m.hotelId, slug: m.slug, role });
   await setSessionCookie(token);
-  redirect(m.role === "manager" ? `/${m.slug}/admin` : `/${m.slug}/staff`);
+  redirect(role === "manager" ? `/${m.slug}/admin` : `/${m.slug}/staff`);
 }

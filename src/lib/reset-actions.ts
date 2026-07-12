@@ -99,5 +99,5 @@ export async function completePasswordReset(
     },
   });
 
-  redirect("/login?reset=1");
+  redirect("/login/manager?reset=1");
 }

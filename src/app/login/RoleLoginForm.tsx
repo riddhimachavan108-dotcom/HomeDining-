@@ -1,10 +1,13 @@
 "use client";
 
 import { useActionState } from "react";
-import { managerStaffLogin } from "@/lib/entry-actions";
+import type { Role } from "@/lib/auth";
+import { roleLogin } from "@/lib/entry-actions";
 
-export default function LoginForm() {
-  const [state, formAction, pending] = useActionState(managerStaffLogin, {});
+export default function RoleLoginForm({ role }: { role: Role }) {
+  const action = roleLogin.bind(null, role);
+  const [state, formAction, pending] = useActionState(action, {});
+  const isManager = role === "manager";
 
   return (
     <form action={formAction} className="fd-form">
@@ -22,20 +25,23 @@ export default function LoginForm() {
       />
 
       <label className="fd-label" htmlFor="password">
-        Password
+        {isManager ? "Manager password" : "Staff password"}
       </label>
       <input
         id="password"
         name="password"
         type="password"
         className="fd-input"
-        placeholder="Manager or staff password"
+        placeholder={isManager ? "Your manager password" : "Your staff password"}
         autoComplete="current-password"
         required
       />
 
       {state?.error && <div className="fd-error">{state.error}</div>}
-      <button className="fd-btn fd-btn-dark" disabled={pending}>
+      <button
+        className={`fd-btn ${isManager ? "fd-btn-dark" : "fd-btn-primary"}`}
+        disabled={pending}
+      >
         {pending ? "Signing in…" : "Sign in"}
       </button>
     </form>
