@@ -12,6 +12,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Platform-wide billing settings (a single row, id = "platform").
+model PlatformSettings {
+  id                 String  @id @default("platform")
+  defaultAmountPaise Int     @default(50000) // ₹500/month default
+  adminUpiId         String? // where hotels pay their subscription
+}
+
 /// A tenant. Each hotel gets its own branded storefront at /{slug}.
 model Hotel {
   id         String   @id @default(cuid())
@@ -38,6 +45,10 @@ model Hotel {
   // Password-reset link (hash of a one-time token + its expiry).
   resetTokenHash      String?
   resetTokenExpiresAt DateTime?
+  // Subscription billing. Trial = createdAt + 45 days (computed). paidUntil
+  // tracks the end of the paid period; each payment extends it by a month.
+  paidUntil               DateTime?
+  subscriptionAmountPaise Int? // per-hotel override; null = platform default
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
 

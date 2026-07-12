@@ -1,9 +1,15 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import QRCode from "qrcode";
 import { getAuthedHotel } from "@/lib/auth";
 import { getHotelBranding } from "@/lib/hotel";
 import { logoutAction } from "@/lib/admin-auth-actions";
+import { getPlatformSettings } from "@/lib/superadmin";
+import { computeBilling, effectiveAmountPaise } from "@/lib/billing";
+import { formatPaise } from "@/lib/money";
+import { buildUpiUri } from "@/lib/upi";
 import AdminNav from "./AdminNav";
+import BillingBanner from "./BillingBanner";
 
 export default async function AdminPanelLayout({
   children,
@@ -23,6 +29,31 @@ export default async function AdminPanelLayout({
   if (authed.role !== "manager") redirect(`/${slug}/staff`);
 
   const logout = logoutAction.bind(null, slug);
+
+  // Subscription banner — MANAGER dashboard only (never guests/staff).
+  const settings = await getPlatformSettings();
+  const billing = computeBilling(authed.hotel.createdAt, authed.hotel.paidUntil);
+  const amountPaise = effectiveAmountPaise(
+    authed.hotel.subscriptionAmountPaise,
+    settings.defaultAmountPaise
+  );
+  const showBanner =
+    (billing.status === "trial" && billing.daysRemaining <= 7) ||
+    billing.status === "due" ||
+    billing.status === "overdue";
+
+  let subQr: string | null = null;
+  if (showBanner && settings.adminUpiId && amountPaise > 0) {
+    subQr = await QRCode.toDataURL(
+      buildUpiUri(
+        settings.adminUpiId,
+        "Home Dining",
+        amountPaise,
+        `Home Dining subscription — ${authed.hotel.name}`
+      ),
+      { width: 220, margin: 1 }
+    );
+  }
 
   return (
     <div className="adm-shell">
@@ -57,6 +88,18 @@ export default async function AdminPanelLayout({
       </header>
 
       <AdminNav slug={slug} />
+
+      {showBanner && (
+        <div className="adm-main" style={{ paddingBottom: 0 }}>
+          <BillingBanner
+            status={billing.status as "trial" | "due" | "overdue"}
+            daysRemaining={billing.daysRemaining}
+            amountLabel={formatPaise(amountPaise)}
+            adminUpi={settings.adminUpiId}
+            qrDataUrl={subQr}
+          />
+        </div>
+      )}
 
       <main className="adm-main">{children}</main>
     </div>
