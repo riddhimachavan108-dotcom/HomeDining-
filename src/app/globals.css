@@ -776,6 +776,26 @@ body {
 .hd-pay-open:hover {
   background: var(--primary-dark);
 }
+.hd-paid-btn {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  background: #1a7f3c;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+}
+.hd-paid-btn:hover {
+  background: #156c33;
+}
+.hd-paid-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 .hd-order-testnote {
   text-align: center;
   font-size: 12px;

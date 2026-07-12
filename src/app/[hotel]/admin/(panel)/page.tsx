@@ -35,7 +35,8 @@ export default async function AdminOrdersPage({
   if (!authed) notFound();
 
   const orders = await prisma.order.findMany({
-    where: { hotelId: authed.hotel.id },
+    // Only paid-confirmed orders reach staff — never "waiting for payment".
+    where: { hotelId: authed.hotel.id, status: { not: "PENDING_PAYMENT" } },
     orderBy: { createdAt: "desc" },
     include: { items: true },
     take: 100,

@@ -5,10 +5,13 @@ import { prisma } from "@/lib/db";
 import { formatPaise } from "@/lib/money";
 import { buildUpiUri } from "@/lib/upi";
 import StatusPoller from "./StatusPoller";
+import PaidButton from "./PaidButton";
 
 const STATUS_TEXT: Record<string, string> = {
+  PENDING_PAYMENT:
+    "Scan the QR and pay. Your order is sent to the kitchen only after you pay.",
   AWAITING_VERIFICATION:
-    "Please complete the UPI payment below. Our staff will confirm it shortly.",
+    "Payment done — thank you! Our staff will verify it and start your order shortly.",
   CONFIRMED: "Payment confirmed! Your food is being prepared.",
   PREPARING: "Your food is being prepared.",
   DELIVERED: "Delivered. Enjoy your meal!",
@@ -30,12 +33,13 @@ export default async function OrderPage({
 
   const hotel = order.hotel;
   const cancelled = order.status === "CANCELLED";
-  const awaiting = order.status === "AWAITING_VERIFICATION";
+  const pendingPayment = order.status === "PENDING_PAYMENT";
 
-  // Generate a dynamic UPI QR with the exact amount pre-filled.
+  // Generate a dynamic UPI QR with the exact amount pre-filled — only while
+  // the guest still needs to pay.
   let qrDataUrl: string | null = null;
   let upiUri: string | null = null;
-  if (hotel.upiId && awaiting) {
+  if (hotel.upiId && pendingPayment) {
     upiUri = buildUpiUri(
       hotel.upiId,
       hotel.name,
@@ -50,15 +54,21 @@ export default async function OrderPage({
       <StatusPoller status={order.status} />
       <div className="hd-order-wrap">
         <div className="hd-order-hero">
-          <div className="hd-order-check">{cancelled ? "✕" : "✓"}</div>
+          <div className="hd-order-check">
+            {cancelled ? "✕" : pendingPayment ? "₹" : "✓"}
+          </div>
           <h1>
-            {cancelled ? "Order cancelled" : "Thank you! Your order has been received"}
+            {cancelled
+              ? "Order cancelled"
+              : pendingPayment
+              ? "Pay to place your order"
+              : "Thank you! Your order has been received"}
           </h1>
           <p>{STATUS_TEXT[order.status] ?? ""}</p>
         </div>
 
-        {/* UPI payment */}
-        {awaiting && (
+        {/* UPI payment — shown only until the guest confirms payment */}
+        {pendingPayment && (
           <div className="hd-order-card hd-pay-card">
             <div className="hd-pay-amount">Pay {formatPaise(order.totalInPaise)}</div>
             {qrDataUrl ? (
@@ -67,7 +77,8 @@ export default async function OrderPage({
                 <img className="hd-pay-qr" src={qrDataUrl} alt="UPI payment QR code" />
                 <p className="hd-pay-hint">
                   Scan with any UPI app (GPay, PhonePe, Paytm) to pay{" "}
-                  <strong>{hotel.name}</strong>. The amount is locked to your bill.
+                  <strong>{hotel.name}</strong>. The amount is locked to your bill —
+                  you can&rsquo;t pay less or more.
                 </p>
                 <div className="hd-pay-vpa">UPI ID: {hotel.upiId}</div>
                 {upiUri && (
@@ -75,12 +86,16 @@ export default async function OrderPage({
                     Open UPI app on this phone
                   </a>
                 )}
+                <PaidButton slug={slug} orderId={order.id} />
               </>
             ) : (
-              <p className="hd-pay-hint">
-                Online payment isn&rsquo;t set up for this hotel yet. Please pay at
-                the front desk and mention your order number.
-              </p>
+              <>
+                <p className="hd-pay-hint">
+                  Online payment isn&rsquo;t set up for this hotel yet. Please pay
+                  at the front desk, then tap below.
+                </p>
+                <PaidButton slug={slug} orderId={order.id} />
+              </>
             )}
           </div>
         )}

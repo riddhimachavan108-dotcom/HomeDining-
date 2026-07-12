@@ -61,7 +61,8 @@ export async function createOrder(
       hotelId: hotel.id,
       roomNumber: room.trim(),
       note: note?.trim() || null,
-      status: "AWAITING_VERIFICATION",
+      // Hidden from staff until the guest confirms payment.
+      status: "PENDING_PAYMENT",
       subtotalInPaise: subtotal,
       taxInPaise: tax,
       totalInPaise: total,
@@ -69,6 +70,28 @@ export async function createOrder(
     },
   });
 
-  revalidatePath(`/${slug}/admin`);
   return { ok: true, orderId: order.id };
+}
+
+/**
+ * The guest taps "I have paid" after scanning the UPI QR. Only then does the
+ * order become visible to staff (as "payment to verify"). Nothing is shown to
+ * staff before this — an unpaid/abandoned order never reaches them.
+ */
+export async function markOrderPaid(
+  slug: string,
+  orderId: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const hotel = await prisma.hotel.findFirst({ where: { slug } });
+  if (!hotel) return { error: "Hotel not found." };
+
+  await prisma.order.updateMany({
+    where: { id: orderId, hotelId: hotel.id, status: "PENDING_PAYMENT" },
+    data: { status: "AWAITING_VERIFICATION" },
+  });
+
+  revalidatePath(`/${slug}/admin`);
+  revalidatePath(`/${slug}/staff`);
+  revalidatePath(`/${slug}/order/${orderId}`);
+  return { ok: true };
 }
