@@ -209,6 +209,7 @@ export default function SetupWizard() {
           <div className="wz-body">
             <h1 className="wz-h1">Set up your hotel</h1>
             <p className="wz-sub">This is what your guests will see.</p>
+            <div className="wz-trial">🎁 Your first 45 days are free — no card needed.</div>
 
             <div className="wz-logo-row">
               <div className="wz-logo" style={{ background: themeColor }}>

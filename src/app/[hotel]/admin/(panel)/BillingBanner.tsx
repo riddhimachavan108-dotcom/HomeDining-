@@ -3,9 +3,10 @@
 import { useState } from "react";
 
 type Props = {
-  status: "trial" | "due" | "overdue";
+  status: "trial-early" | "trial-ending" | "due" | "overdue";
   daysRemaining: number;
   amountLabel: string;
+  trialEndLabel: string;
   adminUpi: string | null;
   qrDataUrl: string | null;
 };
@@ -14,18 +15,32 @@ export default function BillingBanner({
   status,
   daysRemaining,
   amountLabel,
+  trialEndLabel,
   adminUpi,
   qrDataUrl,
 }: Props) {
   const [showQr, setShowQr] = useState(false);
+  const dayWord = daysRemaining === 1 ? "day" : "days";
+  const canPay = status !== "trial-early" && adminUpi && qrDataUrl;
 
   let message: React.ReactNode;
-  if (status === "trial") {
+  if (status === "trial-early") {
+    message = (
+      <>
+        🎁 You&rsquo;re on a <strong>free trial</strong> —{" "}
+        <strong>
+          {daysRemaining} {dayWord} left
+        </strong>
+        . Everything is free until <strong>{trialEndLabel}</strong>. After that,
+        Home Dining is <strong>{amountLabel}/month</strong>.
+      </>
+    );
+  } else if (status === "trial-ending") {
     message = (
       <>
         Your free trial ends in{" "}
         <strong>
-          {daysRemaining} day{daysRemaining === 1 ? "" : "s"}
+          {daysRemaining} {dayWord}
         </strong>
         . Continue Home Dining for <strong>{amountLabel}/month</strong>.
       </>
@@ -53,16 +68,16 @@ export default function BillingBanner({
     <div className={`bill-banner bill-${status}`}>
       <div className="bill-row">
         <span className="bill-msg">{message}</span>
-        {adminUpi && qrDataUrl && (
+        {canPay && (
           <button className="bill-btn" onClick={() => setShowQr((v) => !v)}>
             {showQr ? "Hide QR" : "Show payment QR"}
           </button>
         )}
       </div>
-      {showQr && adminUpi && qrDataUrl && (
+      {showQr && canPay && (
         <div className="bill-qr">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qrDataUrl} alt="Subscription payment QR" />
+          <img src={qrDataUrl!} alt="Subscription payment QR" />
           <div className="bill-qr-info">
             <div className="bill-qr-amt">{amountLabel}</div>
             <div className="bill-qr-vpa">Pay to {adminUpi}</div>

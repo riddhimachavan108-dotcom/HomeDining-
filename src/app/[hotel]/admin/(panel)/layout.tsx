@@ -5,7 +5,7 @@ import { getAuthedHotel } from "@/lib/auth";
 import { getHotelBranding } from "@/lib/hotel";
 import { logoutAction } from "@/lib/admin-auth-actions";
 import { getPlatformSettings } from "@/lib/superadmin";
-import { computeBilling, effectiveAmountPaise } from "@/lib/billing";
+import { computeBilling, effectiveAmountPaise, formatDate } from "@/lib/billing";
 import { formatPaise } from "@/lib/money";
 import { buildUpiUri } from "@/lib/upi";
 import AdminNav from "./AdminNav";
@@ -37,13 +37,24 @@ export default async function AdminPanelLayout({
     authed.hotel.subscriptionAmountPaise,
     settings.defaultAmountPaise
   );
-  const showBanner =
-    (billing.status === "trial" && billing.daysRemaining <= 7) ||
-    billing.status === "due" ||
-    billing.status === "overdue";
+  // Show a banner for the whole trial (gentle early, nudge in last 7 days),
+  // plus due/overdue. "active" (paid) shows nothing.
+  const showBanner = billing.status !== "active";
+  let bannerStatus: "trial-early" | "trial-ending" | "due" | "overdue" = "due";
+  if (billing.status === "trial") {
+    bannerStatus = billing.daysRemaining <= 7 ? "trial-ending" : "trial-early";
+  } else if (billing.status === "overdue") {
+    bannerStatus = "overdue";
+  } // "due" and "active"(unused) fall through to the "due" default
 
+  // A payment QR is only relevant once payment matters (not early trial).
   let subQr: string | null = null;
-  if (showBanner && settings.adminUpiId && amountPaise > 0) {
+  if (
+    showBanner &&
+    bannerStatus !== "trial-early" &&
+    settings.adminUpiId &&
+    amountPaise > 0
+  ) {
     subQr = await QRCode.toDataURL(
       buildUpiUri(
         settings.adminUpiId,
@@ -92,9 +103,10 @@ export default async function AdminPanelLayout({
       {showBanner && (
         <div className="adm-main" style={{ paddingBottom: 0 }}>
           <BillingBanner
-            status={billing.status as "trial" | "due" | "overdue"}
+            status={bannerStatus}
             daysRemaining={billing.daysRemaining}
             amountLabel={formatPaise(amountPaise)}
+            trialEndLabel={formatDate(billing.trialEndsAt)}
             adminUpi={settings.adminUpiId}
             qrDataUrl={subQr}
           />
