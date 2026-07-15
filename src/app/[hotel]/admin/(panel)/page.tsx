@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getAuthedHotel } from "@/lib/auth";
 import { formatPaise } from "@/lib/money";
 import { updateOrderStatus } from "@/lib/admin-actions";
+import OrderAlarm from "@/components/OrderAlarm";
 
 const NEXT_STATUS: Record<string, { label: string; value: string } | null> = {
   AWAITING_VERIFICATION: { label: "✓ Confirm payment", value: "CONFIRMED" },
@@ -48,6 +49,7 @@ export default async function AdminOrdersPage({
 
   return (
     <div>
+      <OrderAlarm slug={slug} />
       <div className="adm-page-head">
         <div>
           <h1 className="adm-h1">Orders</h1>

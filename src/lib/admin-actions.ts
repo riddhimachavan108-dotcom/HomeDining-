@@ -288,3 +288,18 @@ export async function updateCredentials(
   revalidatePath(`/${slug}`);
   return { ok: true };
 }
+
+/* ── NEW-ORDER ALERT (polled by the orders screen) ──────── */
+
+// Returns the IDs of orders that need attention (paid, not yet handled).
+// Used by the ringing alert on the manager/staff orders screens.
+export async function getPendingOrderIds(slug: string): Promise<string[]> {
+  const authed = await getAuthedHotel(slug);
+  if (!authed) return [];
+  const rows = await prisma.order.findMany({
+    where: { hotelId: authed.hotel.id, status: "AWAITING_VERIFICATION" },
+    select: { id: true },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((r) => r.id);
+}

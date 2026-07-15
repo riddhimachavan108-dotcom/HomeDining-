@@ -5,6 +5,7 @@ import { getHotelBranding } from "@/lib/hotel";
 import { formatPaise } from "@/lib/money";
 import { updateOrderStatus } from "@/lib/admin-actions";
 import { logoutAction } from "@/lib/admin-auth-actions";
+import OrderAlarm from "@/components/OrderAlarm";
 
 const NEXT_STATUS: Record<string, { label: string; value: string } | null> = {
   AWAITING_VERIFICATION: { label: "✓ Confirm payment", value: "CONFIRMED" },
@@ -72,6 +73,7 @@ export default async function StaffOrdersPage({
       </header>
 
       <main className="adm-main">
+        <OrderAlarm slug={slug} />
         <div className="adm-page-head">
           <div>
             <h1 className="adm-h1">Incoming orders</h1>
