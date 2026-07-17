@@ -744,6 +744,8 @@ body {
   border-radius: 12px;
   padding: 8px;
   background: white;
+  display: block;
+  margin: 0 auto; /* centre the QR in the card */
 }
 .hd-pay-hint {
   font-size: 13px;
