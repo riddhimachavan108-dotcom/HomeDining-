@@ -42,6 +42,7 @@ export default function MenuOrder({ hotel }: { hotel: HotelData }) {
 
   const [cart, setCart] = useState<Cart>({});
   const [cartOpen, setCartOpen] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const [activeCat, setActiveCat] = useState(hotel.categories[0]?.id ?? "");
   const [room, setRoom] = useState("");
   const [placing, setPlacing] = useState(false);
@@ -333,11 +334,52 @@ export default function MenuOrder({ hotel }: { hotel: HotelData }) {
                   onClick={completeOrder}
                   disabled={placing}
                 >
-                  {placing ? "Placing your order…" : "Complete the Order"}
+                  {placing ? "Placing your order…" : "Complete my order"}
+                </button>
+                <button
+                  className="hd-cancel-order-btn"
+                  onClick={() => setConfirmCancel(true)}
+                  disabled={placing}
+                >
+                  Cancel my order
                 </button>
               </div>
             )}
           </aside>
+
+          {/* Cancel confirmation */}
+          {confirmCancel && (
+            <div className="hd-modal-overlay">
+              <div className="hd-modal">
+                <div className="hd-modal-icon">🗑️</div>
+                <h2>Cancel this order?</h2>
+                <p>Are you sure you want to cancel this order?</p>
+                <div className="hd-modal-actions">
+                  <button
+                    className="hd-modal-btn-ghost"
+                    onClick={() => setConfirmCancel(false)}
+                  >
+                    No, keep it
+                  </button>
+                  <button
+                    className="hd-modal-btn"
+                    onClick={() => {
+                      setCart({});
+                      try {
+                        localStorage.removeItem(storageKey);
+                      } catch {
+                        /* ignore */
+                      }
+                      setConfirmCancel(false);
+                      setCartOpen(false);
+                    }}
+                  >
+                    Yes, cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </>

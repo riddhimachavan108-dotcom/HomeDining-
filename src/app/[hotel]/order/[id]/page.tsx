@@ -5,16 +5,20 @@ import { prisma } from "@/lib/db";
 import { formatPaise } from "@/lib/money";
 import { buildUpiUri } from "@/lib/upi";
 import StatusPoller from "./StatusPoller";
-import PaidButton from "./PaidButton";
+import PaymentClaim from "./PaymentClaim";
 
 const STATUS_TEXT: Record<string, string> = {
   PENDING_PAYMENT:
-    "Scan the QR and pay. Your order is sent to the kitchen only after you pay.",
-  AWAITING_VERIFICATION:
-    "Payment done — thank you! Our staff will verify it and start your order shortly.",
-  CONFIRMED: "Payment confirmed! Your food is being prepared.",
+    "Scan the QR and pay, then enter your transaction ID below. Your order reaches the kitchen only after you confirm.",
+  CLAIMED:
+    "Your order has been received. Payment will be verified by the hotel.",
+  PAY_AT_RECEPTION:
+    "Your order has been received. Please pay at the reception when you check out.",
+  CONFIRMED: "Payment verified! Your food is being prepared.",
   PREPARING: "Your food is being prepared.",
   DELIVERED: "Delivered. Enjoy your meal!",
+  NOT_RECEIVED:
+    "We couldn't confirm your payment yet. Please contact the reception.",
   CANCELLED: "This order was cancelled. Please contact the front desk.",
 };
 
@@ -33,6 +37,7 @@ export default async function OrderPage({
 
   const hotel = order.hotel;
   const cancelled = order.status === "CANCELLED";
+  const notReceived = order.status === "NOT_RECEIVED";
   const pendingPayment = order.status === "PENDING_PAYMENT";
 
   // Generate a dynamic UPI QR with the exact amount pre-filled — only while
@@ -49,21 +54,28 @@ export default async function OrderPage({
     qrDataUrl = await QRCode.toDataURL(upiUri, { width: 260, margin: 1 });
   }
 
+  const heroIcon = cancelled
+    ? "✕"
+    : notReceived
+    ? "!"
+    : pendingPayment
+    ? "₹"
+    : "✓";
+  const heroTitle = cancelled
+    ? "Order cancelled"
+    : notReceived
+    ? "Payment not confirmed"
+    : pendingPayment
+    ? "Pay to place your order"
+    : "Thank you! Your order has been received";
+
   return (
     <div className="hd-order-page">
       <StatusPoller status={order.status} />
       <div className="hd-order-wrap">
         <div className="hd-order-hero">
-          <div className="hd-order-check">
-            {cancelled ? "✕" : pendingPayment ? "₹" : "✓"}
-          </div>
-          <h1>
-            {cancelled
-              ? "Order cancelled"
-              : pendingPayment
-              ? "Pay to place your order"
-              : "Thank you! Your order has been received"}
-          </h1>
+          <div className="hd-order-check">{heroIcon}</div>
+          <h1>{heroTitle}</h1>
           <p>{STATUS_TEXT[order.status] ?? ""}</p>
         </div>
 
@@ -86,17 +98,14 @@ export default async function OrderPage({
                     Open UPI app on this phone
                   </a>
                 )}
-                <PaidButton slug={slug} orderId={order.id} />
               </>
             ) : (
-              <>
-                <p className="hd-pay-hint">
-                  Online payment isn&rsquo;t set up for this hotel yet. Please pay
-                  at the front desk, then tap below.
-                </p>
-                <PaidButton slug={slug} orderId={order.id} />
-              </>
+              <p className="hd-pay-hint">
+                Online payment isn&rsquo;t set up for this hotel. You can pay at
+                the reception instead.
+              </p>
             )}
+            <PaymentClaim slug={slug} orderId={order.id} />
           </div>
         )}
 
@@ -105,6 +114,12 @@ export default async function OrderPage({
             <span className="hd-order-room-lg">Room {order.roomNumber}</span>
             <span>Order #{order.id.slice(-6).toUpperCase()}</span>
           </div>
+
+          {order.paymentRef && (
+            <div className="hd-order-ref">
+              Payment reference: <strong>{order.paymentRef}</strong>
+            </div>
+          )}
 
           <div style={{ marginTop: 8 }}>
             {order.items.map((it) => (

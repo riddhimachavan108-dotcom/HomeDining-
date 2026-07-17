@@ -103,7 +103,9 @@ model Order {
   taxInPaise      Int
   totalInPaise    Int
   note            String? // guest instructions
-  // Set when staff verify the UPI payment in their app.
+  // Guest's claimed UPI transaction ID (UTR); null for "pay at reception".
+  paymentRef        String?
+  // Set when staff verify the payment.
   paymentVerifiedAt DateTime?
   createdAt       DateTime @default(now())
 

@@ -73,12 +73,42 @@ export async function createOrder(
   return { ok: true, orderId: order.id };
 }
 
+function revalidateOrder(slug: string, orderId: string) {
+  revalidatePath(`/${slug}/admin`);
+  revalidatePath(`/${slug}/staff`);
+  revalidatePath(`/${slug}/order/${orderId}`);
+}
+
 /**
- * The guest taps "I have paid" after scanning the UPI QR. Only then does the
- * order become visible to staff (as "payment to verify"). Nothing is shown to
- * staff before this — an unpaid/abandoned order never reaches them.
+ * The guest enters their UPI transaction ID (UTR) after paying. We store it
+ * and mark the order "Claimed — to be verified". It is NOT treated as paid
+ * until staff verify it against their UPI app.
  */
-export async function markOrderPaid(
+export async function claimPayment(
+  slug: string,
+  orderId: string,
+  txnId: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const ref = (txnId || "").trim();
+  if (ref.length < 8) {
+    return {
+      error:
+        "The payment has not been confirmed. Please pay using the QR code and enter the transaction ID shown in your UPI app.",
+    };
+  }
+  const hotel = await prisma.hotel.findFirst({ where: { slug } });
+  if (!hotel) return { error: "Hotel not found." };
+
+  await prisma.order.updateMany({
+    where: { id: orderId, hotelId: hotel.id, status: "PENDING_PAYMENT" },
+    data: { status: "CLAIMED", paymentRef: ref },
+  });
+  revalidateOrder(slug, orderId);
+  return { ok: true };
+}
+
+/** The guest chooses to pay cash at the reception; the hotel collects later. */
+export async function payAtReception(
   slug: string,
   orderId: string
 ): Promise<{ ok?: boolean; error?: string }> {
@@ -87,11 +117,8 @@ export async function markOrderPaid(
 
   await prisma.order.updateMany({
     where: { id: orderId, hotelId: hotel.id, status: "PENDING_PAYMENT" },
-    data: { status: "AWAITING_VERIFICATION" },
+    data: { status: "PAY_AT_RECEPTION" },
   });
-
-  revalidatePath(`/${slug}/admin`);
-  revalidatePath(`/${slug}/staff`);
-  revalidatePath(`/${slug}/order/${orderId}`);
+  revalidateOrder(slug, orderId);
   return { ok: true };
 }

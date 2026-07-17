@@ -1789,6 +1789,159 @@ body {
   .alarm-ring { animation: none; }
 }
 
+/* ── ORDER STATUS (new payment states) ──────────────────── */
+.adm-status-claimed {
+  background: #fef3c7;
+  color: #92600a;
+}
+.adm-status-reception {
+  background: #e0edff;
+  color: #1e40af;
+}
+.adm-status-notreceived {
+  background: #fde2e0;
+  color: #b02417;
+}
+.adm-status-confirmed {
+  background: #d1fae5;
+  color: #065f46;
+}
+.adm-txn {
+  background: #fbf6e6;
+  border: 1px solid #f0e2b8;
+  color: #6b5410;
+  font-size: 13px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  word-break: break-all;
+}
+.adm-txn strong {
+  font-size: 15px;
+  letter-spacing: 0.3px;
+}
+.adm-txn-note {
+  color: #8a7a44;
+  font-weight: 400;
+}
+.adm-flag {
+  background: #fde2e0;
+  border: 1px solid #f3b8b1;
+  color: #b02417;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+/* ── GUEST: cart cancel + payment claim ─────────────────── */
+.hd-cancel-order-btn {
+  width: 100%;
+  background: white;
+  color: var(--muted);
+  border: 1.5px solid var(--border);
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.hd-cancel-order-btn:hover {
+  border-color: #c0392b;
+  color: #c0392b;
+}
+.hd-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.hd-modal-btn,
+.hd-modal-btn-ghost {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+}
+.hd-modal-btn {
+  background: #c0392b;
+  color: white;
+}
+.hd-modal-btn:hover {
+  background: #a5281b;
+}
+.hd-modal-btn-ghost {
+  background: white;
+  border: 1.5px solid var(--border);
+  color: var(--accent);
+}
+.hd-claim {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  text-align: left;
+}
+.hd-claim-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.hd-claim-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  outline: none;
+  letter-spacing: 0.5px;
+}
+.hd-claim-input:focus {
+  border-color: var(--primary);
+}
+.hd-claim-or {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  margin: 14px 0 10px;
+}
+.hd-reception-btn {
+  width: 100%;
+  background: white;
+  color: var(--accent);
+  border: 1.5px solid var(--border);
+  padding: 13px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hd-reception-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.hd-reception-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.hd-order-ref {
+  background: color-mix(in srgb, var(--primary) 8%, white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 10px;
+  word-break: break-all;
+}
+
 /* ═══════════════════════════════════════════════════════════
    LANDING PAGE
    ═══════════════════════════════════════════════════════════ */

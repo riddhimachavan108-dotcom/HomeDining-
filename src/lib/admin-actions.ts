@@ -161,7 +161,9 @@ export async function updateOrderStatus(slug: string, formData: FormData) {
   const id = String(formData.get("id") || "");
   const status = String(formData.get("status") || "");
   const allowed = [
-    "AWAITING_VERIFICATION",
+    "CLAIMED",
+    "PAY_AT_RECEPTION",
+    "NOT_RECEIVED",
     "CONFIRMED",
     "PREPARING",
     "DELIVERED",
@@ -172,7 +174,7 @@ export async function updateOrderStatus(slug: string, formData: FormData) {
     where: { id, hotelId },
     data: {
       status,
-      // Record when staff confirm the UPI payment.
+      // Record when staff verify the payment (only CONFIRMED counts as paid).
       ...(status === "CONFIRMED" ? { paymentVerifiedAt: new Date() } : {}),
     },
   });
@@ -297,7 +299,10 @@ export async function getPendingOrderIds(slug: string): Promise<string[]> {
   const authed = await getAuthedHotel(slug);
   if (!authed) return [];
   const rows = await prisma.order.findMany({
-    where: { hotelId: authed.hotel.id, status: "AWAITING_VERIFICATION" },
+    where: {
+      hotelId: authed.hotel.id,
+      status: { in: ["CLAIMED", "PAY_AT_RECEPTION"] },
+    },
     select: { id: true },
     orderBy: { createdAt: "desc" },
   });
