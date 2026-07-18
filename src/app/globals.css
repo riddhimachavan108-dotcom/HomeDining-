@@ -1931,6 +1931,27 @@ body {
   opacity: 0.6;
   cursor: not-allowed;
 }
+.hd-payopts {
+  margin-top: 6px;
+}
+.hd-paynow-btn {
+  width: 100%;
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 11px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hd-paynow-btn:hover {
+  background: var(--primary-dark);
+}
+.hd-paynow-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 .hd-order-ref {
   background: color-mix(in srgb, var(--primary) 8%, white);
   border: 1px solid var(--border);

@@ -33,6 +33,8 @@ export default async function AdminSettingsPage({
           logoText: hotel.logoText,
           logoUrl: hotel.logoUrl,
           upiId: hotel.upiId,
+          razorpayKeyId: hotel.razorpayKeyId,
+          hasRzpSecret: Boolean(hotel.razorpayKeySecret),
           themeColor: hotel.themeColor,
           accentColor: hotel.accentColor,
           etaMinutes: hotel.etaMinutes,

@@ -218,6 +218,11 @@ export async function updateBranding(
     logoUrl = `data:${file.type};base64,${buffer.toString("base64")}`;
   }
 
+  // Razorpay keys: update key id always; only update the secret if a new one
+  // is typed (blank keeps the existing secret).
+  const rzpKeyId = String(formData.get("razorpayKeyId") || "").trim() || null;
+  const rzpSecret = String(formData.get("razorpayKeySecret") || "").trim();
+
   await prisma.hotel.update({
     where: { id: hotelId },
     data: {
@@ -225,6 +230,8 @@ export async function updateBranding(
       tagline: String(formData.get("tagline") || "").trim(),
       logoText: String(formData.get("logoText") || "").trim() || null,
       upiId: String(formData.get("upiId") || "").trim() || null,
+      razorpayKeyId: rzpKeyId,
+      ...(rzpSecret ? { razorpayKeySecret: rzpSecret } : {}),
       ...(logoUrl !== undefined ? { logoUrl } : {}),
       themeColor: String(formData.get("themeColor") || "#B8860B"),
       accentColor: String(formData.get("accentColor") || "#1a1a2e"),

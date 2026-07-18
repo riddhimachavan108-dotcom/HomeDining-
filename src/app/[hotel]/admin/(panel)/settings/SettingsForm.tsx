@@ -10,6 +10,8 @@ type HotelBranding = {
   logoText: string | null;
   logoUrl: string | null;
   upiId: string | null;
+  razorpayKeyId: string | null;
+  hasRzpSecret: boolean;
   themeColor: string;
   accentColor: string;
   etaMinutes: string;
@@ -114,7 +116,38 @@ export default function SettingsForm({ hotel }: { hotel: HotelBranding }) {
           placeholder="e.g. hotelname@okhdfcbank"
         />
         <span className="adm-hint">
-          Guests scan a QR that pays this UPI ID the exact bill amount.
+          Used only if online payment (below) is not set up.
+        </span>
+      </div>
+
+      <div className="adm-field">
+        <label className="adm-label">
+          Online payment — Razorpay Key ID (auto-confirms real payments)
+        </label>
+        <input
+          name="razorpayKeyId"
+          className="adm-input"
+          defaultValue={hotel.razorpayKeyId ?? ""}
+          placeholder="rzp_test_XXXXXXXX or rzp_live_XXXXXXXX"
+        />
+        <label className="adm-label" style={{ marginTop: 10 }}>
+          Razorpay Key Secret
+        </label>
+        <input
+          name="razorpayKeySecret"
+          type="password"
+          className="adm-input"
+          placeholder={
+            hotel.hasRzpSecret
+              ? "•••••••• (saved — leave blank to keep)"
+              : "Paste your Razorpay key secret"
+          }
+          autoComplete="new-password"
+        />
+        <span className="adm-hint">
+          {hotel.razorpayKeyId && hotel.hasRzpSecret
+            ? "✓ Online payment is ON — guests pay by UPI and the order confirms automatically."
+            : "Add both keys to turn on “Pay Now”. Get them free at dashboard.razorpay.com."}
         </span>
       </div>
 

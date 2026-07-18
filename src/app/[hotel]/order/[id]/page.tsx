@@ -6,10 +6,11 @@ import { formatPaise } from "@/lib/money";
 import { buildUpiUri } from "@/lib/upi";
 import StatusPoller from "./StatusPoller";
 import PaymentClaim from "./PaymentClaim";
+import PayOptions from "./PayOptions";
 
 const STATUS_TEXT: Record<string, string> = {
   PENDING_PAYMENT:
-    "Scan the QR and pay, then enter your transaction ID below. Your order reaches the kitchen only after you confirm.",
+    "Choose how to pay. Your order reaches the kitchen only after payment.",
   CLAIMED:
     "Your order has been received. Payment will be verified by the hotel.",
   PAY_AT_RECEPTION:
@@ -39,12 +40,15 @@ export default async function OrderPage({
   const cancelled = order.status === "CANCELLED";
   const notReceived = order.status === "NOT_RECEIVED";
   const pendingPayment = order.status === "PENDING_PAYMENT";
+  // Real payment gateway configured? Then "Pay Now" auto-confirms on a genuine
+  // payment (no fake claims). Otherwise fall back to the manual UPI-QR flow.
+  const hasGateway = Boolean(hotel.razorpayKeyId && hotel.razorpayKeySecret);
 
-  // Generate a dynamic UPI QR with the exact amount pre-filled — only while
-  // the guest still needs to pay.
+  // Generate a dynamic UPI QR with the exact amount pre-filled — only for the
+  // manual fallback (no gateway).
   let qrDataUrl: string | null = null;
   let upiUri: string | null = null;
-  if (hotel.upiId && pendingPayment) {
+  if (hotel.upiId && pendingPayment && !hasGateway) {
     upiUri = buildUpiUri(
       hotel.upiId,
       hotel.name,
@@ -79,11 +83,26 @@ export default async function OrderPage({
           <p>{STATUS_TEXT[order.status] ?? ""}</p>
         </div>
 
-        {/* UPI payment — shown only until the guest confirms payment */}
+        {/* Payment — shown only until the order is paid/placed */}
         {pendingPayment && (
           <div className="hd-order-card hd-pay-card">
             <div className="hd-pay-amount">Pay {formatPaise(order.totalInPaise)}</div>
-            {qrDataUrl ? (
+
+            {hasGateway ? (
+              // Real gateway: order confirms only on a genuine, verified payment.
+              <>
+                <p className="hd-pay-hint">
+                  Pay securely by UPI. Your order is placed only after the payment
+                  succeeds — no payment, no order.
+                </p>
+                <PayOptions
+                  slug={slug}
+                  orderId={order.id}
+                  themeColor={hotel.themeColor}
+                />
+              </>
+            ) : qrDataUrl ? (
+              // Manual fallback (no gateway): UPI QR + transaction-ID claim.
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img className="hd-pay-qr" src={qrDataUrl} alt="UPI payment QR code" />
@@ -98,14 +117,17 @@ export default async function OrderPage({
                     Open UPI app on this phone
                   </a>
                 )}
+                <PaymentClaim slug={slug} orderId={order.id} />
               </>
             ) : (
-              <p className="hd-pay-hint">
-                Online payment isn&rsquo;t set up for this hotel. You can pay at
-                the reception instead.
-              </p>
+              <>
+                <p className="hd-pay-hint">
+                  Online payment isn&rsquo;t set up for this hotel yet. You can pay
+                  at the counter instead.
+                </p>
+                <PaymentClaim slug={slug} orderId={order.id} />
+              </>
             )}
-            <PaymentClaim slug={slug} orderId={order.id} />
           </div>
         )}
 

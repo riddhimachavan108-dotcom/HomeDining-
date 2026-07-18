@@ -1,5 +1,6 @@
 "use server";
 
+import crypto from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { prisma } from "./db";
 
@@ -118,6 +119,98 @@ export async function payAtReception(
   await prisma.order.updateMany({
     where: { id: orderId, hotelId: hotel.id, status: "PENDING_PAYMENT" },
     data: { status: "PAY_AT_RECEPTION" },
+  });
+  revalidateOrder(slug, orderId);
+  return { ok: true };
+}
+
+/* ── ONLINE PAYMENT (Razorpay gateway — true auto-confirm) ── */
+
+type RzpCreate =
+  | { error: string }
+  | {
+      ok: true;
+      razorpayOrderId: string;
+      keyId: string;
+      amount: number;
+      hotelName: string;
+    };
+
+/** Create a Razorpay order using the hotel's own keys. */
+export async function createRazorpayOrder(
+  slug: string,
+  orderId: string
+): Promise<RzpCreate> {
+  const hotel = await prisma.hotel.findFirst({ where: { slug } });
+  if (!hotel) return { error: "Hotel not found." };
+  const keyId = hotel.razorpayKeyId;
+  const keySecret = hotel.razorpayKeySecret;
+  if (!keyId || !keySecret) {
+    return { error: "Online payment is not set up for this hotel." };
+  }
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, hotelId: hotel.id },
+  });
+  if (!order) return { error: "Order not found." };
+
+  const res = await fetch("https://api.razorpay.com/v1/orders", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization:
+        "Basic " + Buffer.from(`${keyId}:${keySecret}`).toString("base64"),
+    },
+    body: JSON.stringify({
+      amount: order.totalInPaise,
+      currency: "INR",
+      receipt: order.id,
+    }),
+  });
+  if (!res.ok) {
+    return { error: "Couldn't start the payment. Please try again." };
+  }
+  const rzp = (await res.json()) as { id: string };
+  return {
+    ok: true,
+    razorpayOrderId: rzp.id,
+    keyId,
+    amount: order.totalInPaise,
+    hotelName: hotel.name,
+  };
+}
+
+/**
+ * Verify Razorpay's signature and mark the order CONFIRMED (paid) — ONLY if
+ * the signature is genuine. A guest cannot fake this; the order reaches the
+ * kitchen only after a real, verified payment.
+ */
+export async function verifyRazorpayPayment(
+  slug: string,
+  orderId: string,
+  razorpayOrderId: string,
+  razorpayPaymentId: string,
+  signature: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const hotel = await prisma.hotel.findFirst({ where: { slug } });
+  if (!hotel?.razorpayKeySecret) return { error: "Payment not configured." };
+
+  const expected = crypto
+    .createHmac("sha256", hotel.razorpayKeySecret)
+    .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+    .digest("hex");
+  const a = Buffer.from(expected);
+  const b = Buffer.from(signature);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return { error: "Payment could not be verified." };
+  }
+
+  await prisma.order.updateMany({
+    where: { id: orderId, hotelId: hotel.id, status: "PENDING_PAYMENT" },
+    data: {
+      status: "CONFIRMED",
+      paymentRef: razorpayPaymentId,
+      paymentVerifiedAt: new Date(),
+    },
   });
   revalidateOrder(slug, orderId);
   return { ok: true };

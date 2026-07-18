@@ -42,6 +42,10 @@ model Hotel {
   staffPasswordHash String? // staff password (orders-only view)
   guestCode         String? @unique // code guests enter to reach the menu
   managerEmail      String? // for password reset
+  // Online payment gateway (Razorpay) — the hotel's own keys, so real
+  // payments confirm automatically and settle to the hotel's account.
+  razorpayKeyId     String?
+  razorpayKeySecret String?
   // Password-reset link (hash of a one-time token + its expiry).
   resetTokenHash      String?
   resetTokenExpiresAt DateTime?
