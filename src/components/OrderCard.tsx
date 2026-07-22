@@ -1,5 +1,5 @@
 import { formatPaise } from "@/lib/money";
-import { updateOrderStatus } from "@/lib/admin-actions";
+import { updateOrderStatus, setOrderEta } from "@/lib/admin-actions";
 
 type OrderCardOrder = {
   id: string;
@@ -7,6 +7,7 @@ type OrderCardOrder = {
   status: string;
   paymentRef: string | null;
   totalInPaise: number;
+  etaOverrideMinutes: number | null;
   items: {
     id: string;
     quantity: number;
@@ -21,9 +22,39 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
   NOT_RECEIVED: { label: "Payment NOT received", cls: "notreceived" },
   CONFIRMED: { label: "Paid ✓", cls: "confirmed" },
   PREPARING: { label: "Preparing", cls: "preparing" },
+  OUT_FOR_DELIVERY: { label: "On the way", cls: "ontheway" },
   DELIVERED: { label: "Delivered", cls: "delivered" },
   CANCELLED: { label: "Cancelled", cls: "cancelled" },
 };
+
+// Small optional control: adjust the estimated prep time the guest sees for
+// this one order (e.g. when the kitchen is busy). Blank = use hotel default.
+function EtaForm({
+  slug,
+  orderId,
+  current,
+}: {
+  slug: string;
+  orderId: string;
+  current: number | null;
+}) {
+  return (
+    <form action={setOrderEta.bind(null, slug)} className="adm-eta-form">
+      <input type="hidden" name="id" value={orderId} />
+      <label className="adm-eta-label">Est. mins</label>
+      <input
+        name="etaMinutes"
+        type="number"
+        min="1"
+        max="240"
+        className="adm-eta-input"
+        defaultValue={current ?? ""}
+        placeholder="default"
+      />
+      <button className="adm-btn adm-btn-ghost adm-btn-sm">Set</button>
+    </form>
+  );
+}
 
 function StatusButton({
   slug,
@@ -160,6 +191,15 @@ export default function OrderCard({
             <StatusButton
               slug={slug}
               orderId={order.id}
+              status="OUT_FOR_DELIVERY"
+              label="On the way →"
+              variant="primary"
+            />
+          )}
+          {s === "OUT_FOR_DELIVERY" && (
+            <StatusButton
+              slug={slug}
+              orderId={order.id}
               status="DELIVERED"
               label="Mark delivered"
               variant="primary"
@@ -167,6 +207,11 @@ export default function OrderCard({
           )}
         </div>
       </div>
+
+      {/* Optional: tweak the guest's estimated time while the order is live. */}
+      {(s === "CONFIRMED" || s === "PREPARING" || s === "OUT_FOR_DELIVERY") && (
+        <EtaForm slug={slug} orderId={order.id} current={order.etaOverrideMinutes} />
+      )}
     </div>
   );
 }

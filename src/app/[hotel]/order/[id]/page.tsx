@@ -7,6 +7,7 @@ import { buildUpiUri } from "@/lib/upi";
 import StatusPoller from "./StatusPoller";
 import PaymentClaim from "./PaymentClaim";
 import PayOptions from "./PayOptions";
+import ActiveOrderSaver from "@/components/ActiveOrderSaver";
 
 const STATUS_TEXT: Record<string, string> = {
   PENDING_PAYMENT:
@@ -76,12 +77,20 @@ export default async function OrderPage({
   return (
     <div className="hd-order-page">
       <StatusPoller status={order.status} />
+      <ActiveOrderSaver slug={slug} orderId={order.id} status={order.status} />
       <div className="hd-order-wrap">
         <div className="hd-order-hero">
           <div className="hd-order-check">{heroIcon}</div>
           <h1>{heroTitle}</h1>
           <p>{STATUS_TEXT[order.status] ?? ""}</p>
         </div>
+
+        {/* Once the order is placed, offer live tracking (McDonald's-style). */}
+        {!pendingPayment && !cancelled && (
+          <Link href={`/${slug}/order/${order.id}/track`} className="hd-track-btn">
+            📍 Track your order
+          </Link>
+        )}
 
         {/* Payment — shown only until the order is paid/placed */}
         {pendingPayment && (

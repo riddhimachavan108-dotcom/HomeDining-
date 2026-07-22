@@ -38,6 +38,7 @@ export default async function AdminSettingsPage({
           themeColor: hotel.themeColor,
           accentColor: hotel.accentColor,
           etaMinutes: hotel.etaMinutes,
+          prepMinutes: hotel.prepMinutes,
           gstPercent: hotel.gstPercent,
         }}
       />

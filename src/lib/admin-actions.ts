@@ -166,20 +166,54 @@ export async function updateOrderStatus(slug: string, formData: FormData) {
     "NOT_RECEIVED",
     "CONFIRMED",
     "PREPARING",
+    "OUT_FOR_DELIVERY",
     "DELIVERED",
     "CANCELLED",
   ];
   if (!id || !allowed.includes(status)) return;
+  const now = new Date();
   await prisma.order.updateMany({
     where: { id, hotelId },
     data: {
       status,
-      // Record when staff verify the payment (only CONFIRMED counts as paid).
-      ...(status === "CONFIRMED" ? { paymentVerifiedAt: new Date() } : {}),
+      // Stamp each tracking milestone the first time it's reached, so the
+      // guest's timeline can show a time next to every completed stage.
+      // (Only CONFIRMED counts as "paid" — that's what paymentVerifiedAt means.)
+      ...(status === "CONFIRMED" ? { paymentVerifiedAt: now } : {}),
+      ...(status === "PREPARING" ? { preparingAt: now } : {}),
+      ...(status === "OUT_FOR_DELIVERY" ? { outForDeliveryAt: now } : {}),
+      ...(status === "DELIVERED" ? { deliveredAt: now } : {}),
     },
   });
   revalidatePath(`/${slug}/admin`);
   revalidatePath(`/${slug}/staff`);
+  // Guest's order + tracking pages so they see the change within seconds.
+  revalidatePath(`/${slug}/order/${id}`);
+  revalidatePath(`/${slug}/order/${id}/track`);
+}
+
+/**
+ * Staff/manager adjust the estimated prep time for one order (e.g. when the
+ * kitchen is busy). Blank clears the override and falls back to the hotel
+ * default. The guest's tracking page reflects it within seconds.
+ */
+export async function setOrderEta(slug: string, formData: FormData) {
+  const hotelId = await requireStaffOrManager(slug);
+  const id = String(formData.get("id") || "");
+  if (!id) return;
+  const raw = String(formData.get("etaMinutes") || "").trim();
+  const parsed = parseInt(raw, 10);
+  const override =
+    raw === "" || !Number.isFinite(parsed)
+      ? null
+      : Math.max(1, Math.min(240, parsed));
+  await prisma.order.updateMany({
+    where: { id, hotelId },
+    data: { etaOverrideMinutes: override },
+  });
+  revalidatePath(`/${slug}/admin`);
+  revalidatePath(`/${slug}/staff`);
+  revalidatePath(`/${slug}/order/${id}/track`);
 }
 
 /* ── BRANDING ───────────────────────────────────────────── */
@@ -195,6 +229,7 @@ export async function updateBranding(
   const name = String(formData.get("name") || "").trim();
   if (!name) return { error: "Hotel name is required." };
   const gstRaw = parseInt(String(formData.get("gstPercent") || "5"), 10);
+  const prepRaw = parseInt(String(formData.get("prepMinutes") || "30"), 10);
 
   // Logo resolution:
   //   - "Remove logo" checked        -> clear it (fall back to monogram)
@@ -236,6 +271,7 @@ export async function updateBranding(
       themeColor: String(formData.get("themeColor") || "#B8860B"),
       accentColor: String(formData.get("accentColor") || "#1a1a2e"),
       etaMinutes: String(formData.get("etaMinutes") || "20–35").trim(),
+      prepMinutes: Number.isFinite(prepRaw) ? Math.max(1, Math.min(240, prepRaw)) : 30,
       gstPercent: Number.isFinite(gstRaw) ? gstRaw : 5,
     },
   });

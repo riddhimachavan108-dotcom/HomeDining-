@@ -33,6 +33,7 @@ model Hotel {
   // Operations
   gstPercent Int      @default(5) // tax rate applied at checkout
   etaMinutes String   @default("20–35") // estimated delivery shown to guests
+  prepMinutes Int     @default(30) // default preparation time for order tracking
   currency   String   @default("INR")
   // Payments — the hotel's own UPI ID; guests pay via a dynamic UPI QR and
   // staff verify the payment in their UPI app before confirming the order.
@@ -109,8 +110,14 @@ model Order {
   note            String? // guest instructions
   // Guest's claimed UPI transaction ID (UTR); null for "pay at reception".
   paymentRef        String?
-  // Set when staff verify the payment.
+  // Set when staff verify the payment (also = "confirmed by kitchen" time).
   paymentVerifiedAt DateTime?
+  // Order-tracking timeline milestones (set as staff advance the order).
+  preparingAt       DateTime? // "Preparing your food" reached
+  outForDeliveryAt  DateTime? // "On the way to your room" reached
+  deliveredAt       DateTime? // "Delivered" reached
+  // Staff override of the estimated prep time for this one order (minutes).
+  etaOverrideMinutes Int?
   createdAt       DateTime @default(now())
 
   items OrderItem[]

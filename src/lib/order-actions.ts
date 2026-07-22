@@ -74,6 +74,23 @@ export async function createOrder(
   return { ok: true, orderId: order.id };
 }
 
+/**
+ * Lightweight status lookup for the guest's "active order" banner on the menu.
+ * Returns just the status string (or null if the order is gone), so the banner
+ * can hide/clear itself once the order is delivered or cancelled.
+ */
+export async function getOrderStatusLite(
+  slug: string,
+  orderId: string
+): Promise<{ status: string } | null> {
+  if (!orderId) return null;
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, hotel: { slug } },
+    select: { status: true },
+  });
+  return order ? { status: order.status } : null;
+}
+
 function revalidateOrder(slug: string, orderId: string) {
   revalidatePath(`/${slug}/admin`);
   revalidatePath(`/${slug}/staff`);

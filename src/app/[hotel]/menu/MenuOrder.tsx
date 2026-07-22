@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatPaise } from "@/lib/money";
 import { createOrder } from "@/lib/order-actions";
+import ActiveOrderBanner from "@/components/ActiveOrderBanner";
 
 export type MenuItemData = {
   id: string;
@@ -145,6 +146,9 @@ export default function MenuOrder({ hotel }: { hotel: HotelData }) {
           </Link>
         </div>
       </header>
+
+      {/* Active-order banner — links back to live tracking if one is running */}
+      <ActiveOrderBanner slug={hotel.slug} />
 
       {/* CATEGORY TABS */}
       <nav className="hd-category-nav">

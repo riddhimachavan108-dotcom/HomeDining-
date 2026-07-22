@@ -15,6 +15,7 @@ type HotelBranding = {
   themeColor: string;
   accentColor: string;
   etaMinutes: string;
+  prepMinutes: number;
   gstPercent: number;
 };
 
@@ -194,7 +195,7 @@ export default function SettingsForm({ hotel }: { hotel: HotelBranding }) {
 
       <div className="adm-grid-2">
         <div className="adm-field">
-          <label className="adm-label">Estimated delivery (minutes)</label>
+          <label className="adm-label">Estimated delivery (shown on menu)</label>
           <input
             name="etaMinutes"
             className="adm-input"
@@ -202,6 +203,25 @@ export default function SettingsForm({ hotel }: { hotel: HotelBranding }) {
             placeholder="20–35"
           />
         </div>
+        <div className="adm-field">
+          <label className="adm-label">Default prep time for tracking (minutes)</label>
+          <input
+            name="prepMinutes"
+            type="number"
+            min="1"
+            max="240"
+            className="adm-input"
+            defaultValue={hotel.prepMinutes}
+            placeholder="30"
+          />
+          <span className="adm-hint">
+            Shown to guests on the order-tracking page. Staff can adjust it per
+            order if the kitchen is busy.
+          </span>
+        </div>
+      </div>
+
+      <div className="adm-grid-2">
         <div className="adm-field">
           <label className="adm-label">GST %</label>
           <input
